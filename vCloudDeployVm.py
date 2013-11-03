@@ -218,7 +218,7 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href + '/guestCustomizationSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
                 
-		print "\nUpdating the virtual machine hostname... /n"
+		print "\nUpdating the virtual machine hostname... \n"
 
 		time.sleep (5)
                 self.ip()
@@ -230,7 +230,7 @@ class vCloud_Lookup(object):
                 for child in root.iter():
 
                         if child.tag == '{http://www.vmware.com/vcloud/v1.5}IpAddress':
-				print 'IP Address of machine just deployed is:', child.text
+				print '\nIP Address of the virtual machine just deployed is...', child.text, '\n'
 				vCloud_Lookup.vm_ip = child.text
 
                 time.sleep (15)

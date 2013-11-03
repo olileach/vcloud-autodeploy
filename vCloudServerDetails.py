@@ -26,7 +26,7 @@ class vCloud_instance(object):
 		query = ("select max(id) from vcloud.vm_instances")
 		self.cursor.execute(query)
 		res = self.cursor.fetchall()
-		self.connection.close()
+		#self.connection.close()
 
 		for v in res:
   			for k in v:
