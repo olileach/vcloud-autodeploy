@@ -29,10 +29,6 @@ x.vapp_templates(template_name = 'puppet-centos-6x')
 x.vapps(vapp_name = 'ol-vapp-04')
 x.recompose_vapp()
 
-# get values for virtual machine to insert in to database
+# insert the virtual machine details in to the vCloud vm_instance database 
 
-vm_name = str(vCloud_Lookup.vm_name)
-vm_href = str(vCloud_Lookup.vm_href)
-vm_ip 	= str(vCloud_Lookup.vm_ip)
-
-y.update_server(vm_name=vm_name, vm_href=vm_href, vm_ip=vm_ip)
+y.update_server(vm_name=vCloud_Lookup.vm_name, vm_href=vCloud_Lookup.vm_href, vm_ip=vCloud_Lookup.vm_ip)
