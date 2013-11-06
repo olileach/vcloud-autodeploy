@@ -40,6 +40,8 @@ class vCloud_Lookup(object):
                                 self.headers["Authorization:"]=access_token_value
                         if k == "x-vcloud-authorization" : self.headers[k]=v
 
+		self.org_url()
+
         def org_url(self):
 
                 g = requests.get(self.endpoint + 'org', data=None, headers = self.headers)
@@ -76,6 +78,9 @@ class vCloud_Lookup(object):
                         if child.tag == ('''{http://www.vmware.com/vcloud/v1.5}VAppRecord'''):
                                 for k,v in child.attrib.iteritems():
                                         if v == vapp_name : self.vapp = child.attrib['href']
+
+		self.recompose_vapp()
+
         def recompose_vapp(self):
 
                 post_headers = self.headers
@@ -118,9 +123,9 @@ class vCloud_Lookup(object):
                                                         task_id_href = child.attrib['href']
 
                 x = 0
-                print "\nDeploying virtual machine. Please wait..... \n"
-                print "Installing \n"
-                print "1 % completed"
+                #print "\nDeploying virtual machine. Please wait..... \n"
+                #print "Installing \n"
+                #print "1 % completed"
                 while x == 0:
 
                         time.sleep(5)
@@ -133,10 +138,10 @@ class vCloud_Lookup(object):
                                 tag = tag.replace("{http://www.vmware.com/vcloud/v1.5}","")
                                 if tag == 'Progress' :
 
-                                        if child.text != '1' : print child.text,'% completed'
+                                        #if child.text != '1' : print child.text,'% completed'
                                         if child.text == '100' : x = 1
 
-                print "\nThe deployment of the virtual machine has been successful. Moving on...\n"
+                #print "\nThe deployment of the virtual machine has been successful. Moving on...\n"
                 time.sleep(15)
                 self.query_vms()
 
@@ -171,7 +176,7 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href, data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
 
-		print "\nUpdating the virtual machine name in vCloud...\n"
+		#print "\nUpdating the virtual machine name in vCloud...\n"
 
                 time.sleep(15)
                 self.update_network()
@@ -196,7 +201,7 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href + '/networkConnectionSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
                 
-		print "\nUpdating the virtual machine network configuration... \n"
+		#print "\nUpdating the virtual machine network configuration... \n"
 
 		time.sleep(15)
                 self.update_hostname()
@@ -218,7 +223,7 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href + '/guestCustomizationSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
                 
-		print "\nUpdating the virtual machine hostname... \n"
+		#print "\nUpdating the virtual machine hostname... \n"
 
 		time.sleep (5)
                 self.ip()
@@ -230,7 +235,7 @@ class vCloud_Lookup(object):
                 for child in root.iter():
 
                         if child.tag == '{http://www.vmware.com/vcloud/v1.5}IpAddress':
-				print '\nIP Address of the virtual machine just deployed is...', child.text, '\n'
+				#print '\nIP Address of the virtual machine just deployed is...', child.text, '\n'
 				vCloud_Lookup.vm_ip = child.text
 
                 time.sleep (15)
@@ -242,5 +247,5 @@ class vCloud_Lookup(object):
                 g = requests.post(vCloud_Lookup.vm_href + '/power/action/powerOn', headers=self.headers)
                 root = ET.fromstring(g.content)
 
-		print "\nPowering on virtual machine... \n"
+		#print "\nPowering on virtual machine... \n"
 

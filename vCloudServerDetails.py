@@ -1,6 +1,8 @@
 import mysql.connector
+from vCloudDeployVm import vCloud_Lookup
 
-class vCloud_instance(object):
+
+class vCloud_Instance(object):
 
 
 	server_name 	= None
@@ -19,26 +21,23 @@ class vCloud_instance(object):
 
 		self.connection = mysql.connector.connect(**self.config)
 		self.cursor 	= self.connection.cursor()
-		self.server_id	= None
 
 	def get_servername(self):
 
 		query = ("select max(id) from vcloud.vm_instances")
 		self.cursor.execute(query)
 		res = self.cursor.fetchall()
-		#self.connection.close()
+		#self.connection.close() # only use if terminating sql connection is required
 
 		for v in res:
   			for k in v:
 				if k == None: k = 0
-				self.server_id   = k+1
-				self.server_name = "server-"+str(self.server_id)
-    				return "server-"+str(self.server_id)
+				vCloud_Instance.server_id   = k+1
+				vCloud_Lookup.vm_name = "server-"+str(vCloud_Instance.server_id)
+				vCloud_Instance.server_name = "server-"+str(vCloud_Instance.server_id)
+    				return "server-"+str(vCloud_Instance.server_id)
 
 	def update_server(self, vm_name, vm_href, vm_ip):
-
-		#cnx = mysql.connector.connect(user='python_dba', database='vcloud', host='127.0.0.1', password='F00f1ght3r$')
-		#cursor = cnx.cursor()
 
 		query = ("INSERT INTO `vcloud`.`vm_instances` "
 			"(`vm_name`, `vm_href`, `vm_ipaddress`) "
