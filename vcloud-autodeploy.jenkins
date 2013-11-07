@@ -1,0 +1,75 @@
+#!/bin/sh
+
+NOW=$(date +"%H%M%S%d%m%y")
+
+# deploy virtual machine and get IP address
+
+echo ""
+echo "deploying virtual machine... "
+
+ip=$(/usr/share/python-vcloud/bin/python /usr/share/python-vcloud/scripts/vcloud-client.py $WORKSPACE/autodeploy.log.$NOW)
+
+echo ""
+echo "virtual machine IP address: $ip"
+echo ""
+echo "deploying virtual machine complete. Log details:"
+echo ""
+cat $WORKSPACE/autodeploy.log.$NOW
+echo ""
+echo "checking to see if virtual machine is online"
+echo ""
+
+res=$(/usr/share/python-vcloud/bin/python $WORKSPACE/ping.py $ip)
+
+echo "the virtual machine is $res"
+echo ""
+
+# login with virtual machine IP address, chkconfig puppet and reboot
+
+if [[ $res == """online""" ]] ; then
+  echo "Continuing with starting puppet..." 
+  ssh -o StrictHostKeyChecking=no devopsadmin@$ip "sudo /sbin/chkconfig puppet on"
+  ssh -o StrictHostKeyChecking=no devopsadmin@$ip "sudo reboot"
+fi
+
+# Ping to make sure machine is back up and running on network after reboot in above step
+# login and test is httpd is running. Loop until httpd is running, or quit after a while.
+
+echo "checking to see if apache install has completed and httpd service is running"
+
+res=$(/usr/share/python-vcloud/bin/python $WORKSPACE/ping.py $ip)
+
+if [[ $res == """online""" ]] ; then 
+
+status=0
+stopped=0
+
+# now checking if httpd service is running
+
+while [[ $status -le 0 ]]
+do
+test=$(ssh -o StrictHostKeyChecking=no devopsadmin@$ip 'sudo service httpd status')
+
+      if [[ "$test" == *running* ]]; then
+         echo ""
+         echo "apache has been installed. $test. Moving on to update web site with latest code..."
+         status=1
+      fi
+      if [ "$stopped" -gt 240 ]; then 
+         echo ""
+         echo "apache did not install as expected. Please see the logs on virtual machine IP address $ip..."
+         break
+      fi
+
+      stopped=`expr $stopped + 1`
+
+done
+fi
+
+rsync -e "ssh -t -l devopsadmin" --rsync-path='sudo rsync' -avz --stats --progress --human-readable $WORKSPACE/templates/ devopsadmin@$ip:/var/www/html/
+
+if [[ "$status" == 1 ]]; then
+   echo ""
+   echo "Job has completed. Please log in to the following URL -- http://$ip"
+   echo ""
+fi

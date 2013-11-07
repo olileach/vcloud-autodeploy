@@ -5,12 +5,12 @@ import time
 from vCloudLogger import vCloud_Logger
 
 
-class vCloud_Lookup(object):
+class vCloud_Deploy(object):
 
-
-	vm_name = None
-	vm_ip	= None
-	vm_href	= None
+	vm_name 	= None
+	vm_ip		= None
+	vm_href		= None
+	vm_temp_name 	= None
 
         def __init__(self):
 
@@ -21,7 +21,7 @@ class vCloud_Lookup(object):
                 self.root = None
                 self.vapp_template = None
                 self.vapp = None
-		self.log = vCloud_Logger()
+		self.x = vCloud_Logger()
 
         def sessions(self, username, org, password, key, secret, endpoint):
 
@@ -42,6 +42,7 @@ class vCloud_Lookup(object):
                         if k == "x-vcloud-authorization" : self.headers[k]=v
 
 		self.org_url()
+		self.x.log(lvl='i',msg=("session headers created ...OK"))
 
         def org_url(self):
 
@@ -59,7 +60,7 @@ class vCloud_Lookup(object):
 
         def vapp_templates(self, template_name):
 
-
+		vCloud_Deploy.vm_temp_name = template_name 
                 r = requests.get(self.endpoint + '/vAppTemplates/query',headers = self.headers)
                 root = ET.fromstring(r.content)
 
@@ -68,7 +69,8 @@ class vCloud_Lookup(object):
                                 for k,v in child.attrib.iteritems():
                                         if v == template_name : self.vapp_template = child.attrib['href']
 
-                
+                self.x.log(lvl='i',msg=("vapp template variables set ...OK"))
+
         def vapps(self, vapp_name):
 
                 r = requests.get(self.endpoint + '/vApps/query',headers = self.headers)
@@ -104,6 +106,8 @@ class vCloud_Lookup(object):
                 post = requests.post(self.vapp + '/action/recomposeVApp', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
 
+		self.x.log(lvl='i',msg=("recomposed vapp ...OK"))
+
                 self.task_progress(task_id=result.attrib['id'])
 
         def task_progress(self, task_id):
@@ -125,6 +129,8 @@ class vCloud_Lookup(object):
 
                 x = 0
                 
+		self.x.log(lvl='i',msg=("checking progress of deployed vm ...OK"))
+
 		while x == 0:
 
                         time.sleep(5)
@@ -148,14 +154,16 @@ class vCloud_Lookup(object):
                 r = requests.get(self.endpoint + 'vms/query', headers = self.headers)
                 root = ET.fromstring(r.content)
 
+		self.x.log(lvl='i',msg=("checking for vm name ...OK"))
+
                 for child in root:
 
                         if child.tag == ('''{http://www.vmware.com/vcloud/v1.5}VMRecord'''):
                                 for k,v in child.attrib.iteritems():
-                                        if v =="v28388581plc6":
+                                        if v == vCloud_Deploy.vm_temp_name:
                                                 for k,v in child.attrib.iteritems():
                                                         if k == "href" and 'vAppTemplate' not in v :
-								vCloud_Lookup.vm_href = v
+								vCloud_Deploy.vm_href = v
                                                                 self.update_name()
 
         def update_name(self):
@@ -166,12 +174,14 @@ class vCloud_Lookup(object):
                         <vcloud:Vm
                             xmlns:vcloud="http://www.vmware.com/vcloud/v1.5"
                             name="%s">
-                        </vcloud:Vm>""" % (vCloud_Lookup.vm_name)
+                        </vcloud:Vm>""" % (vCloud_Deploy.vm_name)
 
                 post_headers = self.headers
                 post_headers['Content-Type']='application/vnd.vmware.vcloud.vm+xml'
-                post = requests.put(vCloud_Lookup.vm_href, data=xml, headers=post_headers)
+                post = requests.put(vCloud_Deploy.vm_href, data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
+
+		self.x.log(lvl='i',msg=("updated vm name ...OK"))
 
                 time.sleep(15)
                 self.update_network()
@@ -193,8 +203,10 @@ class vCloud_Lookup(object):
 
                 post_headers = self.headers
                 post_headers['Content-Type']='application/vnd.vmware.vcloud.networkConnectionSection+xml'
-                post = requests.put(vCloud_Lookup.vm_href + '/networkConnectionSection', data=xml, headers=post_headers)
+                post = requests.put(vCloud_Deploy.vm_href + '/networkConnectionSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
+
+		self.x.log(lvl='i',msg=("setting and connectng vm network  ...OK"))
 
 		time.sleep(15)
                 self.update_hostname()
@@ -209,11 +221,11 @@ class vCloud_Lookup(object):
                    <ovf:Info>Specifies Guest OS Customization Settings</ovf:Info>
                    <Enabled>true</Enabled>
                    <ComputerName>%s</ComputerName>
-                </GuestCustomizationSection>""" % (vCloud_Lookup.vm_name)
+                </GuestCustomizationSection>""" % (vCloud_Deploy.vm_name)
 
                 post_headers = self.headers
                 post_headers['Content-Type']='application/vnd.vmware.vcloud.guestcustomizationsection+xml'
-                post = requests.put(vCloud_Lookup.vm_href + '/guestCustomizationSection', data=xml, headers=post_headers)
+                post = requests.put(vCloud_Deploy.vm_href + '/guestCustomizationSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
                 
 		time.sleep (5)
@@ -221,17 +233,20 @@ class vCloud_Lookup(object):
 
         def ip(self):
 
-                g = requests.get(vCloud_Lookup.vm_href, headers = self.headers)
+                g = requests.get(vCloud_Deploy.vm_href, headers = self.headers)
                 root = ET.fromstring(g.content)
                 for child in root.iter():
 
                         if child.tag == '{http://www.vmware.com/vcloud/v1.5}IpAddress':
-				vCloud_Lookup.vm_ip = child.text
+				vCloud_Deploy.vm_ip = child.text
+
+		self.x.log(lvl='i',msg=("capturing vm IP address ...OK"))
 
                 time.sleep (15)
                 self.power_on_vm()
 
         def power_on_vm(self):
 
-                g = requests.post(vCloud_Lookup.vm_href + '/power/action/powerOn', headers=self.headers)
+                g = requests.post(vCloud_Deploy.vm_href + '/power/action/powerOn', headers=self.headers)
                 root = ET.fromstring(g.content)
+		self.x.log(lvl='i',msg=("virtual machine powered on ...OK"))

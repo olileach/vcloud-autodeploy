@@ -1,5 +1,8 @@
 import logging
 
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
+
 class vCloud_Logger(object):
 
     filename = None
