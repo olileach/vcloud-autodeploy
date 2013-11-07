@@ -2,6 +2,8 @@ import base64
 import requests
 import xml.etree.ElementTree as ET
 import time
+from vCloudLogger import vCloud_Logger
+
 
 class vCloud_Lookup(object):
 
@@ -19,8 +21,7 @@ class vCloud_Lookup(object):
                 self.root = None
                 self.vapp_template = None
                 self.vapp = None
-                #self.vm_href = None
-                #self.vm_name = "server01"
+		self.log = vCloud_Logger()
 
         def sessions(self, username, org, password, key, secret, endpoint):
 
@@ -123,10 +124,8 @@ class vCloud_Lookup(object):
                                                         task_id_href = child.attrib['href']
 
                 x = 0
-                #print "\nDeploying virtual machine. Please wait..... \n"
-                #print "Installing \n"
-                #print "1 % completed"
-                while x == 0:
+                
+		while x == 0:
 
                         time.sleep(5)
                         g = requests.get(task_id_href, headers = self.headers)
@@ -138,10 +137,8 @@ class vCloud_Lookup(object):
                                 tag = tag.replace("{http://www.vmware.com/vcloud/v1.5}","")
                                 if tag == 'Progress' :
 
-                                        #if child.text != '1' : print child.text,'% completed'
                                         if child.text == '100' : x = 1
 
-                #print "\nThe deployment of the virtual machine has been successful. Moving on...\n"
                 time.sleep(15)
                 self.query_vms()
 
@@ -176,8 +173,6 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href, data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
 
-		#print "\nUpdating the virtual machine name in vCloud...\n"
-
                 time.sleep(15)
                 self.update_network()
 
@@ -200,8 +195,6 @@ class vCloud_Lookup(object):
                 post_headers['Content-Type']='application/vnd.vmware.vcloud.networkConnectionSection+xml'
                 post = requests.put(vCloud_Lookup.vm_href + '/networkConnectionSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
-                
-		#print "\nUpdating the virtual machine network configuration... \n"
 
 		time.sleep(15)
                 self.update_hostname()
@@ -223,8 +216,6 @@ class vCloud_Lookup(object):
                 post = requests.put(vCloud_Lookup.vm_href + '/guestCustomizationSection', data=xml, headers=post_headers)
                 result = ET.fromstring(post.text)
                 
-		#print "\nUpdating the virtual machine hostname... \n"
-
 		time.sleep (5)
                 self.ip()
 
@@ -235,7 +226,6 @@ class vCloud_Lookup(object):
                 for child in root.iter():
 
                         if child.tag == '{http://www.vmware.com/vcloud/v1.5}IpAddress':
-				#print '\nIP Address of the virtual machine just deployed is...', child.text, '\n'
 				vCloud_Lookup.vm_ip = child.text
 
                 time.sleep (15)
@@ -243,9 +233,5 @@ class vCloud_Lookup(object):
 
         def power_on_vm(self):
 
-
                 g = requests.post(vCloud_Lookup.vm_href + '/power/action/powerOn', headers=self.headers)
                 root = ET.fromstring(g.content)
-
-		#print "\nPowering on virtual machine... \n"
-

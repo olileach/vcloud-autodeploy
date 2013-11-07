@@ -1,9 +1,8 @@
 import mysql.connector
 from vCloudDeployVm import vCloud_Lookup
-
+from vCloudLogger import vCloud_Logger
 
 class vCloud_Instance(object):
-
 
 	server_name 	= None
 	server_id 	= None
@@ -18,16 +17,16 @@ class vCloud_Instance(object):
   				'raise_on_warnings': True,
 				}
 
-
 		self.connection = mysql.connector.connect(**self.config)
 		self.cursor 	= self.connection.cursor()
+		self.log 	= vCloud_Logger()
+
 
 	def get_servername(self):
 
 		query = ("select max(id) from vcloud.vm_instances")
 		self.cursor.execute(query)
 		res = self.cursor.fetchall()
-		#self.connection.close() # only use if terminating sql connection is required
 
 		for v in res:
   			for k in v:
@@ -48,4 +47,3 @@ class vCloud_Instance(object):
 		self.connection.commit()
 		self.cursor.close()
 		self.connection.close()
-

@@ -1,9 +1,15 @@
 import sys
 from vCloudServerDetails import vCloud_Instance
 from vCloudDeployVm import vCloud_Lookup 
+from vCloudLogger import vCloud_Logger
 
 x = vCloud_Lookup()
 y = vCloud_Instance()
+z = vCloud_Logger()
+
+
+vCloud_Logger.filename = sys.argv[1]
+
 
 # set api credentials and endpoint
 
@@ -16,6 +22,7 @@ endpoint 	= 'https://api.savvis.net/clouddatacenter/vcloud/de-central-1/'
 
 # set servername for virtual machine
 
+z.log(lvl='c',msg=("setting servername for vCloud virtual machine"))
 y.get_servername()
 
 # login to vCloud 
